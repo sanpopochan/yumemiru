@@ -406,4 +406,105 @@ link.hidden = !(result.data && !result.error); link.style.display = result.data 
 })();
 
 </script>
+ 
+
+<script>
+
+(() => {
+
+  const dreamId = new URLSearchParams(location.search).get('dream');
+
+  if (!dreamId) return;
+
+  let showing = false;
+
+  let loading = false;
+
+  async function showSharedDream() {
+
+    if (showing || loading) return;
+
+    if (typeof client === 'undefined' || !client) return;
+
+    if (typeof postCard !== 'function') return;
+
+    const feedArea = document.getElementById('feed');
+
+    if (!feedArea) return;
+
+    loading = true;
+
+    try {
+
+      const { data, error } = await client
+
+        .from('dreams')
+
+        .select('id,user_id,nickname,title,category,body,created_at')
+
+        .eq('id', dreamId)
+
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+
+        feedArea.textContent = 'この夢は見つかりませんでした。';
+
+        showing = true;
+
+        return;
+
+      }
+
+      const panel = document.createElement('div');
+
+      panel.id = 'sharedDreamPanel';
+
+      panel.innerHTML =
+
+        '<h2>🌙 共有された夢</h2>' + postCard(data);
+
+      const back = document.createElement('button');
+
+      back.type = 'button';
+
+      back.className = 'secondary';
+
+      back.textContent = 'ほかの夢も見る';
+
+      back.onclick = () => {
+
+        location.href = location.pathname;
+
+      };
+
+      panel.appendChild(back);
+
+      feedArea.before(panel);
+
+      panel.scrollIntoView({ behavior: 'smooth' });
+
+      showing = true;
+
+    } catch (err) {
+
+      console.error('共有された夢の取得に失敗:', err);
+
+    } finally {
+
+      loading = false;
+
+    }
+
+  }
+
+  window.addEventListener('load', showSharedDream);
+
+  setTimeout(showSharedDream, 1500);
+
+})();
+
+</script>
 </body></html>
