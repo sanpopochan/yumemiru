@@ -153,7 +153,10 @@ async function refreshComments(id){const panel=[...document.querySelectorAll('[d
 async function reportTarget(kind,id){if(!user){message('通報するにはログインが必要だよ。');page('account');return;}
  if(!window.confirm('この内容を運営へ通報しますか？'))return;
  const item={reporter_id:user.id,reason:'不適切な内容の確認依頼'};item[kind==='post'?'dream_id':'comment_id']=id;
- const r=await client.from('dream_reports').insert(item);message(r.error?(r.error.code==='23505'?'この内容はすでに通報済みだよ。':'通報できませんでした: '+r.error.message):'通報を受け付けたよ。運営が確認するよ。');}
+
+const r=await client.from('dream_reports').insert(item);const result=r.error?(r.error.code==='23505'?'この内容はすでに通報済みだよ。':'通報できませんでした: '+r.error.message):'✅ 通報を受け付けました！\n運営が内容を確認します。';message(result);alert(result);}
+
+  
 async function authUI(){if(!client||authRefreshing)return;authRefreshing=true;try{const r=await client.auth.getSession();if(r.error)throw r.error;if(r.data.session){const x=await client.auth.getUser();if(x.error)throw x.error;user=x.data.user||null;}else user=null;
  $('signedOut').hidden=!!user;$('signedIn').hidden=!user;$('loginPrompt').hidden=!!user;$('postForm').hidden=!user;$('accountEmail').textContent=user?'ログイン中: '+(user.email||'メールアドレス非公開'):''; $('accountOfficial').hidden=!(user&&officialUsers.has(user.id));
  if(user){await loadMyProfile();await loadFollowing();await mine();}else{myProfile=null;followingSet=new Set();}return !!user;
