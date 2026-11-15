@@ -316,7 +316,57 @@ async function loadReports() {
 
     addText(card, '通報ID', report.id);
 
-    area.appendChild(card);
+    
+
+if (report.status !== 'resolved') {
+
+  const btn = document.createElement('button');
+
+  btn.type = 'button';
+
+  btn.textContent = '✅ 対応済みにする';
+
+  btn.onclick = async () => {
+
+    if (!confirm('この通報を対応済みにしますか？')) return;
+
+    btn.disabled = true;
+
+    try {
+
+      const { data, error } = await client
+
+        .from('dream_reports')
+
+        .update({ status: 'resolved' })
+
+        .eq('id', report.id)
+
+        .select('id')
+
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) throw new Error('更新できませんでした');
+
+      await loadReports();
+
+    } catch (err) {
+
+      alert('更新エラー：' + err.message);
+
+      btn.disabled = false;
+
+    }
+
+  };
+
+  card.appendChild(btn);
+
+}
+
+area.appendChild(card);
 
   }
 
