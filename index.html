@@ -283,4 +283,127 @@ link.hidden = !(result.data && !result.error); link.style.display = result.data 
 })();
 
 </script>
+ 
+
+<script>
+
+(() => {
+
+  const site = location.origin + location.pathname;
+
+  function addShareButtons() {
+
+    document.querySelectorAll('article.post[data-post-id]')
+
+      .forEach(card => {
+
+        if (card.querySelector('.yumemiru-share')) return;
+
+        const id = card.dataset.postId;
+
+        if (!id) return;
+
+        const url = new URL(site);
+
+        url.searchParams.set('dream', id);
+
+        const share = document.createElement('div');
+
+        share.className = 'yumemiru-share';
+
+        share.style.cssText =
+
+          'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px';
+
+        const x = document.createElement('button');
+
+        x.type = 'button';
+
+        x.textContent = '𝕏 Xで共有';
+
+        x.className = 'secondary compact';
+
+        x.onclick = () => {
+
+          const text = 'ユメミルで見つけた夢 🌙';
+
+          const target = 'https://twitter.com/intent/tweet?text='
+
+            + encodeURIComponent(text)
+
+            + '&url=' + encodeURIComponent(url.href);
+
+          window.open(target, '_blank', 'noopener,noreferrer');
+
+        };
+
+        const other = document.createElement('button');
+
+        other.type = 'button';
+
+        other.textContent = '↗ SNSに共有';
+
+        other.className = 'secondary compact';
+
+        other.onclick = async () => {
+
+          const data = {
+
+            title: 'ユメミル 🌙',
+
+            text: 'この夢を見てみて！',
+
+            url: url.href
+
+          };
+
+          try {
+
+            if (navigator.share) {
+
+              await navigator.share(data);
+
+            } else {
+
+              await navigator.clipboard.writeText(url.href);
+
+              alert('共有リンクをコピーしたよ！');
+
+            }
+
+          } catch (err) {
+
+            if (err.name !== 'AbortError') {
+
+              alert('共有できませんでした');
+
+            }
+
+          }
+
+        };
+
+        share.append(x, other);
+
+        card.appendChild(share);
+
+      });
+
+  }
+
+  const observer = new MutationObserver(addShareButtons);
+
+  observer.observe(document.body, {
+
+    childList: true,
+
+    subtree: true
+
+  });
+
+  addShareButtons();
+
+})();
+
+</script>
 </body></html>
