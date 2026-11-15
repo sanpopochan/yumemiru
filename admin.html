@@ -378,6 +378,104 @@ init();
 
 </script>
 
+
+<script>
+
+(() => {
+
+  const area = document.getElementById('adminArea');
+
+  if (!area) return;
+
+  let loaded = false;
+
+  async function showStats() {
+
+    if (area.hidden || loaded) return;
+
+    loaded = true;
+
+    const panel = document.createElement('section');
+
+    panel.className = 'panel';
+
+    panel.innerHTML = `
+
+      <h2>📊 ユメミル利用状況</h2>
+
+      <p id="userStats">読み込み中...</p>
+
+      <button id="refreshStats" type="button">
+
+        数字を更新
+
+      </button>
+
+    `;
+
+    area.prepend(panel);
+
+    const output = panel.querySelector('#userStats');
+
+    output.style.whiteSpace = 'pre-line';
+
+    async function refresh() {
+
+      output.textContent = '集計中...';
+
+      try {
+
+        const { data, error } = await client
+
+          .rpc('yumemiru_user_stats');
+
+        if (error) throw error;
+
+        const s = data?.[0];
+
+        if (!s) throw new Error('集計データがありません');
+
+        output.textContent =
+
+          `👥 登録ユーザー総数：${s.total_users}人\n` +
+
+          `🌱 今日の新規登録：${s.new_today}人\n` +
+
+          `📈 過去7日間の登録：${s.new_last_7_days}人`;
+
+      } catch (err) {
+
+        output.textContent =
+
+          '取得エラー：' + err.message;
+
+      }
+
+    }
+
+    panel.querySelector('#refreshStats')
+
+      .addEventListener('click', refresh);
+
+    await refresh();
+
+  }
+
+  const observer = new MutationObserver(showStats);
+
+  observer.observe(area, {
+
+    attributes: true,
+
+    attributeFilter: ['hidden']
+
+  });
+
+  showStats();
+
+})();
+
+</script>
 </body>
 
 </html>
