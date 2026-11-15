@@ -325,8 +325,15 @@ link.hidden = !(result.data && !result.error); link.style.display = result.data 
 
         x.onclick = () => {
 
-          const text = 'ユメミルで見つけた夢 🌙';
+          
 
+const title = card.querySelector('h3, h2')?.textContent?.trim() || '誰かが見た夢';
+
+const body = card.querySelector('.body, .post-body, p')?.textContent?.trim() || '';
+
+const excerpt = body.length > 100 ? body.slice(0, 100) + '…' : body;
+
+const text = `🌙 ${title}\n\n${excerpt}\n\n続きはユメミルで👇`;
           const target = 'https://twitter.com/intent/tweet?text='
 
             + encodeURIComponent(text)
