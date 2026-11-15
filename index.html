@@ -212,4 +212,75 @@ if(!client){$('setup').hidden=false;$('feed').innerHTML='<div class="empty">Supa
  })();
 }
 </script>
+ 
+
+<script>
+
+(() => {
+
+  const link = document.createElement('a');
+
+  link.href = './admin.html';
+
+  link.textContent = '🛡️ 運営管理';
+
+  link.hidden = true;
+
+  link.style.cssText =
+
+   
+
+'display:none;margin:12px 0;color:#d5b9ff';
+
+  document.getElementById('logout').after(link);
+
+  async function checkAdmin() {
+
+    
+
+link.hidden = true; link.style.display = 'none';
+
+  
+
+    if (!client) return;
+
+    const { data: { user }, error } =
+
+      await client.auth.getUser();
+
+    if (error || !user) return;
+
+    const result = await client
+
+      .from('yumemiru_admins')
+
+      .select('user_id')
+
+      .eq('user_id', user.id)
+
+      .maybeSingle();
+
+    
+
+link.hidden = !(result.data && !result.error); link.style.display = result.data && !result.error ? 'inline-block' : 'none';
+
+  
+
+  }
+
+  if (client) {
+
+    client.auth.onAuthStateChange(() => {
+
+      setTimeout(checkAdmin, 0);
+
+    });
+
+    checkAdmin();
+
+  }
+
+})();
+
+</script>
 </body></html>
