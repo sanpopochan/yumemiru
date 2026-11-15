@@ -1,0 +1,333 @@
+
+
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>運営管理｜ユメミル</title>
+
+<style>
+
+* { box-sizing: border-box; }
+
+body {
+
+  margin: 0;
+
+  padding: 20px 16px 70px;
+
+  background: #171832;
+
+  color: #f5f0ff;
+
+  font-family: -apple-system, sans-serif;
+
+  line-height: 1.7;
+
+}
+
+main { max-width: 680px; margin: auto; }
+
+h1 { color: #d5b9ff; font-size: 25px; }
+
+h2 { font-size: 18px; }
+
+a { color: #d5b9ff; }
+
+.note { color: #bcb5d6; font-size: 13px; }
+
+.panel {
+
+  background: #292a48;
+
+  border: 1px solid #514b6a;
+
+  border-radius: 18px;
+
+  padding: 18px;
+
+  margin-top: 16px;
+
+}
+
+button {
+
+  background: #c7a7ff;
+
+  color: #231a37;
+
+  padding: 12px 18px;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+}
+
+.report {
+
+  background: #333452;
+
+  border-radius: 12px;
+
+  padding: 15px;
+
+  margin-top: 12px;
+
+  overflow-wrap: anywhere;
+
+}
+
+.report p { margin: 7px 0; font-size: 14px; }
+
+code { overflow-wrap: anywhere; }
+
+.status { color: #e3c5ff; font-weight: bold; }
+
+</style>
+
+</head>
+
+<body>
+
+<main>
+
+<a href="./">☾ ユメミルに戻る</a>
+
+<h1>🌙 ユメミル運営管理</h1>
+
+<p class="note">運営者専用・通報管理画面</p>
+
+<div class="panel">
+
+  <h2>🔐 アクセス確認</h2>
+
+  <p id="message">ログイン状態を確認しています...</p>
+
+</div>
+
+<div id="adminArea" hidden>
+
+  <div class="panel">
+
+    <h2>📩 通報一覧</h2>
+
+    <p id="count" class="note"></p>
+
+    <button id="reload" type="button">通報を再読み込み</button>
+
+    <div id="reports"></div>
+
+  </div>
+
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+
+const $ = id => document.getElementById(id);
+
+let client;
+
+function showError(text) {
+
+  $('message').textContent = text;
+
+}
+
+function addText(parent, label, value) {
+
+  const p = document.createElement('p');
+
+  const strong = document.createElement('strong');
+
+  strong.textContent = label + '：';
+
+  p.append(strong, document.createTextNode(String(value ?? '—')));
+
+  parent.appendChild(p);
+
+}
+
+async function init() {
+
+  try {
+
+    // 本体の公開用Supabase設定を読み込む
+
+    const response = await fetch('./index.html', {
+
+      cache: 'no-store'
+
+    });
+
+    if (!response.ok) throw new Error('本体を読み込めません');
+
+    const html = await response.text();
+
+    const url = html.match(/SUPABASE_URL\s*=\s*(['"`])([^'"`]+)\1/);
+
+    const key = html.match(/SUPABASE_ANON_KEY\s*=\s*(['"`])([^'"`]+)\1/);
+
+    if (!url || !key) {
+
+      throw new Error('Supabase設定を取得できません');
+
+    }
+
+    if (!window.supabase) {
+
+      throw new Error('Supabaseライブラリを読み込めません');
+
+    }
+
+    client = window.supabase.createClient(url[2], key[2]);
+
+    // ログインしている本人を検証
+
+    const { data: authData, error: authError } =
+
+      await client.auth.getUser();
+
+    if (authError || !authData.user) {
+
+      showError('ログインが必要です。ユメミルからログインしてください。');
+
+      return;
+
+    }
+
+    // 運営者テーブルで権限確認
+
+    const { data: admin, error: adminError } = await client
+
+      .from('yumemiru_admins')
+
+      .select('user_id')
+
+      .eq('user_id', authData.user.id)
+
+      .maybeSingle();
+
+    if (adminError) throw adminError;
+
+    if (!admin) {
+
+      showError('このアカウントには運営権限がありません。');
+
+      return;
+
+    }
+
+    $('message').textContent = '✅ 運営者として認証されました';
+
+    $('adminArea').hidden = false;
+
+    await loadReports();
+
+  } catch (err) {
+
+    showError('確認エラー：' + err.message);
+
+  }
+
+}
+
+async function loadReports() {
+
+  const area = $('reports');
+
+  area.replaceChildren();
+
+  $('count').textContent = '通報を読み込み中...';
+
+  const { data, error } = await client
+
+    .from('dream_reports')
+
+    .select('id, reporter_id, dream_id, comment_id, reason, created_at, status')
+
+    .order('created_at', { ascending: false })
+
+    .limit(100);
+
+  if (error) {
+
+    $('count').textContent = '読み込みエラー：' + error.message;
+
+    return;
+
+  }
+
+  $('count').textContent = '表示中の通報：' + data.length + '件';
+
+  if (data.length === 0) {
+
+    const p = document.createElement('p');
+
+    p.className = 'note';
+
+    p.textContent = '現在、通報はありません。';
+
+    area.appendChild(p);
+
+    return;
+
+  }
+
+  for (const report of data) {
+
+    const card = document.createElement('div');
+
+    card.className = 'report';
+
+    addText(card, '対応状況',
+
+      report.status === 'resolved' ? '✅ 対応済み' : '🕒 未対応');
+
+    addText(card, '通報日時',
+
+      report.created_at
+
+        ? new Date(report.created_at).toLocaleString('ja-JP')
+
+        : '—');
+
+    addText(card, '通報理由', report.reason);
+
+    addText(card, '夢のID', report.dream_id);
+
+    addText(card, 'コメントID', report.comment_id);
+
+    addText(card, '通報者ID', report.reporter_id);
+
+    addText(card, '通報ID', report.id);
+
+    area.appendChild(card);
+
+  }
+
+}
+
+$('reload').addEventListener('click', loadReports);
+
+init();
+
+</script>
+
+</body>
+
+</html>
