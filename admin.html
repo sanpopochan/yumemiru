@@ -118,6 +118,13 @@ code { overflow-wrap: anywhere; }
 
 <div id="adminArea" hidden>
 
+  <section class="panel" aria-labelledby="dreamCheckStatsHeading">
+    <h2 id="dreamCheckStatsHeading">🔮 夢鑑定室の利用状況</h2>
+    <p id="dreamCheckStats" class="note" aria-live="polite">読み込み中...</p>
+    <button id="refreshDreamCheckStats" type="button">鑑定室の数字を更新</button>
+  </section>
+
+
   <div class="panel">
 
     <h2>📩 通報一覧</h2>
@@ -237,6 +244,7 @@ async function init() {
     $('adminArea').hidden = false;
 
     await loadReports();
+    await loadDreamCheckStats();
 
   } catch (err) {
 
@@ -371,6 +379,30 @@ area.appendChild(card);
   }
 
 }
+
+async function loadDreamCheckStats() {
+  const output = $('dreamCheckStats');
+  const button = $('refreshDreamCheckStats');
+  output.textContent = '集計中...';
+  button.disabled = true;
+  try {
+    const { data, error } = await client.rpc('get_dream_check_stats');
+    if (error) throw error;
+    const stats = Array.isArray(data) ? data[0] : data;
+    if (!stats) throw new Error('集計データがありません');
+    output.textContent =
+      `👤 累計利用者数：${stats.total_visitors}人\n` +
+      `🔮 累計鑑定回数：${stats.total_appraisals}回\n` +
+      `📅 今日の利用者数：${stats.today_visitors}人`;
+    output.style.whiteSpace = 'pre-line';
+  } catch (err) {
+    output.textContent = '取得エラー：' + err.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$('refreshDreamCheckStats').addEventListener('click', loadDreamCheckStats);
 
 $('reload').addEventListener('click', loadReports);
 
