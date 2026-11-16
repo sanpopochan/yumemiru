@@ -30,7 +30,7 @@ async function spin(){
   $('dreamCategory').textContent=dream.category||'夢';
   const body=String(dream.body||'');
   $('dreamBody').textContent=body.length>170?body.slice(0,170)+'…':body;
-  const link=new URL('./',location.href);link.searchParams.set('dream',String(dream.id));
+ const link=new window.URL('./',location.href);link.searchParams.set('dream',String(dream.id));
   $('read').href=link.href;$('read').removeAttribute('aria-disabled');
   $('hint').textContent='気になる夢が出たら「夢を読む」で全文を見てね。';
  }catch(err){console.error('夢ガチャ取得エラー:',err);$('dreamTitle').textContent='夢を取り出せなかったよ';$('dreamCategory').textContent='通信エラー';$('dreamBody').textContent='読み込みに失敗しました。もう一度試してね。' + (err?.message?'\n詳細: '+err.message:'');}
