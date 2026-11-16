@@ -1,6 +1,28 @@
 <!doctype html>
 <html lang="ja">
 <head>
+<!-- 初回訪問のみ、ねむりの歓迎画面へ。共有夢・ログイン認証リンクは優先する。 -->
+<script>
+(function () {
+  try {
+    const key = 'yumemiru_first_welcome_v1';
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const special = ['dream', 'code', 'error', 'error_description', 'access_token', 'refresh_token', 'type', 'token_hash'];
+    const hasSpecialLink = special.some(k => params.has(k) || hash.has(k));
+    const hasOtherParameters = Boolean(window.location.search || window.location.hash);
+    const visited = window.localStorage.getItem(key) === 'seen';
+    if (!visited) {
+      window.localStorage.setItem(key, 'seen');
+      if (!hasSpecialLink && !hasOtherParameters) {
+        window.location.replace(new URL('gacha.html', window.location.href).href);
+      }
+    }
+  } catch (e) {
+    console.warn('初回歓迎画面の判定をスキップしました', e);
+  }
+})();
+</script>
  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-TPF285FR"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
